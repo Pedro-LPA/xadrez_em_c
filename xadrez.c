@@ -16,6 +16,7 @@ typedef struct {
     int pretas;
 } Placar;
 
+
 const char* obterEmoji(char tipo) {
     switch (tipo) {
         case 'R': return "🤴"; 
@@ -28,21 +29,43 @@ const char* obterEmoji(char tipo) {
     }
 }
 
+// Valores das peças do xadrez
+
+int obterValorPeca(char tipo) {
+    switch (tipo) {
+        case 'P': return 1; 
+        case 'C': return 3; 
+        case 'B': return 3; 
+        case 'T': return 5; 
+        case 'D': return 9; 
+        case 'R': return 0; 
+        default:  return 0;
+    }
+}
+
+// Funçao para contagem das peças
+
 Placar contarPecas(char tabuleiro[LINHAS][COLUNAS][4]) {
     Placar jogo = {0, 0};
     for (int l = 0; l < LINHAS; l++) { 
         for (int c = 0; c < COLUNAS; c++) {
+            char tipoDaPeca = tabuleiro[l][c][0];
             char corDaPeca = tabuleiro[l][c][1]; 
             
+            int valor = obterValorPeca(tipoDaPeca);
+            
             if (corDaPeca == 'B') {
-                jogo.brancas++; 
+                jogo.brancas += valor; 
             } else if (corDaPeca == 'P') {
-                jogo.pretas++; 
+                jogo.pretas += valor; 
             }
         }
     }
     return jogo; 
 }
+
+
+// Impressão do tabuleiro
 
 void imprimirTabuleiro(char tab[LINHAS][COLUNAS][4], int turno) {
     #ifdef _WIN32
@@ -75,6 +98,8 @@ void imprimirTabuleiro(char tab[LINHAS][COLUNAS][4], int turno) {
     printf("\n");
 }
 
+// Função comer peças
+
 Placar capturarPeca(char tabuleiro[LINHAS][COLUNAS][4], int origemL, int origemC, int destinoL, int destinoC) {
     if (strcmp(tabuleiro[destinoL][destinoC], " . ") != 0) { 
         printf("\n=====================================\n");
@@ -87,13 +112,23 @@ Placar capturarPeca(char tabuleiro[LINHAS][COLUNAS][4], int origemL, int origemC
     strcpy(tabuleiro[origemL][origemC], " . "); 
 
     Placar placarAtual = contarPecas(tabuleiro);
-    printf("Pecas restantes -> Brancas: %d | Pretas: %d\n", placarAtual.brancas, placarAtual.pretas); 
+    printf("Pontuacao Total -> Brancas: %d | Pretas: %d\n", placarAtual.brancas, placarAtual.pretas); 
+    
+    if (placarAtual.brancas > placarAtual.pretas) {
+        printf("VANTAGEM: Brancas (+%d)\n", placarAtual.brancas - placarAtual.pretas);
+    } else if (placarAtual.pretas > placarAtual.brancas) {
+        printf("VANTAGEM: Pretas (+%d)\n", placarAtual.pretas - placarAtual.brancas);
+    } else {
+        printf("VANTAGEM: Jogo Empatado (0)\n");
+    }
+    
     printf("=====================================\n"); 
 
     return placarAtual;
 }
 
-// ATUALIZADO: Adicionada a verificação da peça de destino para regras do Peão
+// Verificação de movimentos válidos
+
 int validarMovimento(char peca[4], int origL, int origC, int destL, int destC, char pecaDestino[4]) {
     int difL = destL - origL; 
     int difC = destC - origC; 
@@ -105,21 +140,19 @@ int validarMovimento(char peca[4], int origL, int origC, int destL, int destC, c
     char tipo = peca[0]; 
     char cor = peca[1];
     
-    // Verifica se existe um inimigo na casa de destino
     int temInimigo = (strcmp(pecaDestino, " . ") != 0 && pecaDestino[1] != cor);
 
-    // REGRA CORRIGIDA DO PEÃO
     if (tipo == 'P') { 
         if (cor == 'B') {
-            if (difL == -1 && absC == 1 && temInimigo) return 1; // Captura diagonal permitida
-            if (difC == 0 && !temInimigo) { // Avança reto apenas se casa estiver livre
+            if (difL == -1 && absC == 1 && temInimigo) return 1; 
+            if (difC == 0 && !temInimigo) { 
                 if (origL == 6 && difL == -2) return 1; 
                 if (difL == -1) return 1; 
             }
             return 0; 
         } else {
-            if (difL == 1 && absC == 1 && temInimigo) return 1; // Captura diagonal permitida
-            if (difC == 0 && !temInimigo) { // Avança reto apenas se casa estiver livre
+            if (difL == 1 && absC == 1 && temInimigo) return 1; 
+            if (difC == 0 && !temInimigo) { 
                 if (origL == 1 && difL == 2) return 1; 
                 if (difL == 1) return 1; 
             }
@@ -127,7 +160,6 @@ int validarMovimento(char peca[4], int origL, int origC, int destL, int destC, c
         }
     }
     
-    // Demais peças
     if (tipo == 'T') return (difL == 0 || difC == 0); 
     if (tipo == 'C') return ((absL == 2 && absC == 1) || (absL == 1 && absC == 2)); 
     if (tipo == 'B') return (absL == absC); 
@@ -174,7 +206,7 @@ int main() {
         scanf("%d", &posC); 
 
         if (posL < 0 || posL >= LINHAS || posC < 0 || posC >= COLUNAS) { 
-            printf("\n⚠️ Coordenada fora do tabuleiro! Pressione Enter..."); 
+            printf("\n Coordenada fora do tabuleiro! Pressione Enter..."); 
             getchar(); getchar(); continue; 
         }
 
@@ -187,7 +219,7 @@ int main() {
         }
 
         if ((turno == 1 && pecaSelecionada[1] != 'B') || (turno == 2 && pecaSelecionada[1] != 'P')) { 
-            printf("\n⚠️ Essa peca nao pertence ao seu turno! Pressione Enter..."); 
+            printf("\n Essa peca nao pertence ao seu turno! Pressione Enter..."); 
             getchar(); getchar(); continue; 
         }
 
@@ -198,18 +230,17 @@ int main() {
         scanf("%d", &novaC); 
 
         if (novaL < 0 || novaL >= LINHAS || novaC < 0 || novaC >= COLUNAS) { 
-            printf("\n⚠️ Destino fora do tabuleiro! Pressione Enter..."); 
+            printf("\n Destino fora do tabuleiro! Pressione Enter..."); 
             getchar(); getchar(); continue; 
         }
 
         char pecaDestino[4];
         strcpy(pecaDestino, tabuleiro[novaL][novaC]); 
         if (strcmp(pecaDestino, " . ") != 0 && pecaDestino[1] == pecaSelecionada[1]) { 
-            printf("\n⚠️ Movimento invalido! Voce nao pode capturar sua propria peca. Pressione Enter..."); 
+            printf("\n Movimento invalido! Voce nao pode capturar sua propria peca. Pressione Enter..."); 
             getchar(); getchar(); continue; 
         }
 
-        // ATUALIZADO: Agora enviamos a 'pecaDestino' para a função de validação
         if (validarMovimento(pecaSelecionada, posL, posC, novaL, novaC, pecaDestino)) { 
             capturarPeca(tabuleiro, posL, posC, novaL, novaC); 
             
@@ -218,7 +249,7 @@ int main() {
 
             turno = (turno == 1) ? 2 : 1; 
         } else {
-            printf("\n⚠️ Esse nao e um movimento valido para esta peca! Pressione Enter..."); 
+            printf("\n Esse nao e um movimento valido para esta peca! Pressione Enter..."); 
             getchar(); getchar(); 
         }
     }
